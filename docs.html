@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annotation Widget — 前端页面标注系统文档</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f6f8fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --border: #e0e4e8;
+    --primary: #4A90D9;
+    --danger: #E74C3C;
+    --success: #27AE60;
+    --warning: #F39C12;
+    --code-bg: #f0f2f5;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    line-height: 1.8;
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+  }
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 260px; height: 100vh;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 20px;
+    z-index: 10;
+  }
+  .sidebar h2 {
+    font-size: 15px;
+    margin: 0 0 8px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .sidebar .brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0 0 24px;
+    letter-spacing: 0;
+  }
+  .sidebar a {
+    display: block;
+    padding: 6px 0;
+    font-size: 14px;
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s;
+  }
+  .sidebar a:hover { color: var(--primary); }
+  .sidebar a.sub { padding-left: 16px; font-size: 13px; color: var(--text-secondary); }
+  /* Main */
+  .main {
+    margin-left: 260px;
+    max-width: 900px;
+    padding: 40px 60px 120px;
+  }
+  h1 { font-size: 32px; margin: 0 0 8px; }
+  h2 {
+    font-size: 22px;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  h3 { font-size: 17px; margin: 32px 0 12px; color: var(--text); }
+  p { margin: 12px 0; color: var(--text-secondary); }
+  img { max-width: 100%; border-radius: var(--radius); border: 1px solid var(--border); }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.7;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  pre .cmt { color: #6c7086; }
+  pre .str { color: #a6e3a1; }
+  pre .key { color: #89b4fa; }
+  pre .fn { color: #f9e2af; }
+  pre .num { color: #fab387; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { background: var(--bg-secondary); font-weight: 600; }
+  td { color: var(--text-secondary); }
+  td:first-child { font-weight: 500; color: var(--text); white-space: nowrap; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .badge-blue { background: var(--primary); }
+  .badge-red { background: var(--danger); }
+  .badge-green { background: var(--success); }
+  .badge-yellow { background: var(--warning); }
+  ul, ol { padding-left: 24px; color: var(--text-secondary); }
+  li { margin: 6px 0; }
+  .tip {
+    background: #eff6ff;
+    border-left: 4px solid var(--primary);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 14px;
+    color: #1e40af;
+  }
+  .warn {
+    background: #fef3c7;
+    border-left: 4px solid var(--warning);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 14px;
+    color: #92400e;
+  }
+  .file-tree {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text-secondary);
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 24px 20px 80px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="brand">Annotation Widget</div>
+  <h2>目录</h2>
+  <a href="#overview">1. 概述</a>
+  <a href="#what-it-does">2. 功能清单</a>
+  <a href="#project-structure">3. 项目文件结构</a>
+  <a href="#how-it-works">4. 架构原理</a>
+  <a href="#build">5. 构建打包</a>
+  <a href="#integrate">6. 接入项目</a>
+  <a href="#blank-project">7. 改造空白 Vite Vue 项目</a>
+  <a href="#usage">8. 用户使用教程</a>
+  <a href="#api">9. 编程 API</a>
+  <a href="#faq">10. 常见问题</a>
+</nav>
+
+<main class="main">
+
+<h1>Annotation Widget</h1>
+<p>前端页面标注说明系统 — 零代码侵入、独立运行、可开关、可拖拽绑定、跟随组件显隐。</p>
+
+<!-- ============================== 1 ============================== -->
+<h2 id="overview">1. 概述</h2>
+
+<p>Annotation Widget 是一个<strong>完全独立于项目代码</strong>的页面标注系统。任意前端项目只需引入一个 <code>&lt;script&gt;</code> 标签即可使用，无需修改原始项目源码。</p>
+
+<p>典型的使用场景是<strong>原型评审</strong>：你在本地开发页面并添加标注（可编辑），评审者在局域网查看同一页面时只能浏览标注，不能修改。标注数据通过 Vite 中间件实现的 JSON 文件进行同步。</p>
+
+<div class="tip">
+  <strong>核心特点：</strong>零依赖、纯 ES6+、Shadow DOM 隔离、单文件 IIFE、localStorage 持久化、支持 JSON 导入导出。
+</div>
+
+<!-- ============================== 2 ============================== -->
+<h2 id="what-it-does">2. 功能清单</h2>
+
+<table>
+  <tr><th>功能</th><th>说明</th></tr>
+  <tr><td>标注模式切换</td><td>点击图钉按钮或 <code>Ctrl+Shift+A</code> 进入/退出标注模式</td></tr>
+  <tr><td>元素绑定标注</td><td>点击页面任意元素创建标注，通过 XPath+CSS 双选择器定位</td></tr>
+  <tr><td>自由浮动标注</td><td>点击页面空白区域创建标注，按视口百分比定位</td></tr>
+  <tr><td>文本编辑器</td><td>浮动弹窗，支持多行文本、6 色标记、保存/取消/删除</td></tr>
+  <tr><td>标注标记</td><td>编号圆形徽章显示在绑定元素右上角或自由位置</td></tr>
+  <tr><td>悬停提示</td><td>鼠标悬停标注徽章时显示文字预览 tooltip</td></tr>
+  <tr><td>拖拽重绑定</td><td>拖拽标注徽章到另一个元素上重新绑定，或拖到空白处转为自由浮动</td></tr>
+  <tr><td>跟随显隐</td><td>MutationObserver + IntersectionObserver 检测目标元素状态，自动同步标注显隐</td></tr>
+  <tr><td>全局显隐</td><td>点击眼睛按钮一键显示/隐藏全部标注</td></tr>
+  <tr><td>管理面板</td><td>弹窗列表：搜索、编辑、导航定位、删除单项</td></tr>
+  <tr><td>批量操作</td><td>全部显示/隐藏、清空全部、导出 JSON、导入 JSON</td></tr>
+  <tr><td>持久化存储</td><td>localStorage 自动保存，刷新页面不丢失</td></tr>
+  <tr><td>JSON 导入导出</td><td>导出标注为 JSON 文件，在另一台电脑上导入，实现跨设备共享</td></tr>
+  <tr><td>导航定位</td><td>点击列表中的"定位"按钮，页面平滑滚动到标注目标并高亮闪烁</td></tr>
+  <tr><td>孤立检测</td><td>目标元素被删除后，标注徽章显示为虚线问号状态，提示需要重绑定</td></tr>
+  <tr><td>键盘快捷键</td><td><code>Ctrl+Shift+A</code> 切换标注模式</td></tr>
+  <tr><td>Shadow DOM 隔离</td><td>所有 UI 在 closed Shadow DOM 内，CSS/JS 与宿主完全隔离</td></tr>
+  <tr><td>全局 API</td><td><code>window.__AnnotationWidget</code> 提供编程控制接口</td></tr>
+  <tr><td>局域网只读</td><td>局域网访问时自动只读，仅本地 localhost 可编辑</td></tr>
+</table>
+
+<!-- ============================== 3 ============================== -->
+<h2 id="project-structure">3. 项目文件结构</h2>
+
+<p>标注系统涉及两个目录的改动：</p>
+
+<h3>3.1 annotation-widget-build/ — 插件源码 &amp; 构建工具</h3>
+
+<pre class="file-tree">annotation-widget-build/
+├── <strong>build.cjs</strong>           构建脚本（esbuild 打包为单个 IIFE）
+├── <strong>demo.html</strong>           独立演示文件（离线可用）
+├── <strong>docs.html</strong>           本说明文档
+└── src/
+    ├── <strong>index.js</strong>           IIFE 入口，自引导启动
+    ├── <strong>engine.js</strong>         核心引擎，状态管理 + 协调调度
+    ├── <strong>selector.js</strong>        DOM 元素标识（XPath + CSS 选择器）
+    ├── <strong>observer.js</strong>        MutationObserver + IntersectionObserver
+    ├── <strong>persistence.js</strong>     localStorage 读写 + 导入导出
+    ├── <strong>drag.js</strong>            拖拽重绑定逻辑
+    ├── <strong>styles.js</strong>         全局 CSS（构建时内联为字符串）
+    ├── renderers/
+    │   ├── <strong>marker-renderer.js</strong>   标注标记（编号徽章）
+    │   ├── <strong>editor-renderer.js</strong>   文本编辑器弹窗
+    │   ├── <strong>panel-renderer.js</strong>    管理面板（列表、搜索、批量操作）
+    │   ├── <strong>toolbar-renderer.js</strong>  浮动工具栏
+    │   └── <strong>tooltip-renderer.js</strong>  悬停提示
+    └── utils/
+        ├── <strong>dom.js</strong>              DOM 工具函数
+        ├── <strong>throttler.js</strong>        rAF 节流 + debounce
+        ├── <strong>xpath.js</strong>            XPath 生成与解析
+        ├── <strong>uuid.js</strong>             UUID v4 生成
+        └── <strong>event-bus.js</strong>        内部发布/订阅事件系统</pre>
+
+<table>
+  <tr><th>文件</th><th>角色</th></tr>
+  <tr><td><code>src/index.js</code></td><td>IIFE 入口：创建 Shadow DOM → 初始化渲染器 → 启动引擎 → 暴露全局 API</td></tr>
+  <tr><td><code>src/engine.js</code></td><td>核心调度器：标注 CRUD、模式切换、显隐管理、导航定位、拖拽派遣、键盘快捷键</td></tr>
+  <tr><td><code>src/selector.js</code></td><td>从 DOM 元素生成 XPath + CSS 选择器元组；按 XPath 优先策略回溯解析元素</td></tr>
+  <tr><td><code>src/observer.js</code></td><td>MutationObserver（200ms 防抖）监听 DOM 变更；IntersectionObserver 追踪每个元素标注的可见性</td></tr>
+  <tr><td><code>src/persistence.js</code></td><td>localStorage CRUD、schema 迁移（version 1）、JSON 导入导出校验</td></tr>
+  <tr><td><code>src/drag.js</code></td><td>mousedown/move/up 拖拽流程：创建幽灵元素 → elementFromPoint 检测目标 → 重绑定或转浮动</td></tr>
+  <tr><td><code>src/styles.js</code></td><td>CSS 字符串常量，含 CSS 自定义属性（主题色），构建时内联注入 Shadow DOM</td></tr>
+  <tr><td><code>renderers/*.js</code></td><td>五类 UI 渲染器，各自管理 Shadow DOM 内的子元素创建/更新/销毁</td></tr>
+  <tr><td><code>utils/*.js</code></td><td>纯工具函数，无副作用</td></tr>
+  <tr><td><code>build.cjs</code></td><td>esbuild 打包：ES 模块 → 单个 IIFE 文件，ES2020，minified</td></tr>
+</table>
+
+<h3>3.2 项目根目录改动的文件</h3>
+
+<table>
+  <tr><th>文件</th><th>改动内容</th><th>作用</th></tr>
+  <tr><td><code>public/annotation-widget.js</code></td><td>新增，构建产物</td><td>标注系统运行时，被 index.html 引入</td></tr>
+  <tr><td><code>index.html</code></td><td>新增 1 行 <code>&lt;script src="/annotation-widget.js"&gt;&lt;/script&gt;</code></td><td>页面加载时自引导标注系统</td></tr>
+  <tr><td><code>vite.config.ts</code></td><td>新增 Vite 中间件插件</td><td>提供 /api/annotations 读写端点，实现局域网只读同步</td></tr>
+</table>
+
+<div class="tip">
+  <strong>设计原则：</strong>对项目源文件（<code>src/</code> 目录）<strong>零修改</strong>。唯一侵入是 <code>index.html</code> 里的一行 script 标签 + <code>vite.config.ts</code> 的两个 API 端点。如果不需局域网同步，连 vite.config.ts 都不用改。
+</div>
+
+<!-- ============================== 4 ============================== -->
+<h2 id="how-it-works">4. 架构原理</h2>
+
+<h3>4.1 注入与隔离</h3>
+<ol>
+  <li>页面加载 <code>annotation-widget.js</code>（自执行的 IIFE）</li>
+  <li>脚本检测 <code>DOMContentLoaded</code> → 在 <code>document.body</code> 上挂载一个 <code>&lt;div&gt;</code> 作为 Shadow Host</li>
+  <li>在 Shadow Host 上调用 <code>attachShadow({ mode: 'closed' })</code> 创建隔离 DOM</li>
+  <li>CSS 样式字符串注入 Shadow DOM 内的 <code>&lt;style&gt;</code> 标签</li>
+  <li>所有 UI 元素（工具栏、编辑器、标记、面板、tooltip）均在 Shadow DOM 内创建和操作</li>
+</ol>
+
+<h3>4.2 元素定位策略</h3>
+<table>
+  <tr><th>优先级</th><th>策略</th><th>说明</th></tr>
+  <tr><td>1</td><td>绝对 XPath</td><td>从目标元素向上遍历到 body，记录 tagName + 兄弟索引</td></tr>
+  <tr><td>2</td><td>CSS 选择器（回退）</td><td>id → class（过滤 data-v-* scoped class）→ nth-child</td></tr>
+</table>
+<p>遇到有 <code>id</code> 的祖先节点则以此为锚点停止遍历。解析时 XPath 优先，CSS 选择器作为降级方案。</p>
+
+<h3>4.3 可见性追踪</h3>
+<ul>
+  <li><strong>MutationObserver</strong> 挂载到 <code>document.body</code>，监听 childList + attributes（style/class/hidden），变更后 200ms 防抖触发重检</li>
+  <li><strong>IntersectionObserver</strong> 为每个元素绑定标注单独创建，检测视口交叉状态</li>
+  <li>每收到 scroll/resize 事件，通过 <code>requestAnimationFrame</code> 重新计算所有标记位置</li>
+</ul>
+
+<h3>4.4 状态机</h3>
+<pre>IDLE ──点图钉──&gt; ANNOTATION_MODE
+ANNOTATION_MODE ──点元素/空白──&gt; EDITING
+EDITING ──保存/取消──&gt; ANNOTATION_MODE
+ANNOTATION_MODE ──点图钉──&gt; IDLE
+任意状态 ──点列表──&gt; PANEL_OPEN</pre>
+
+<h3>4.5 事件总线</h3>
+<p>内部使用发布/订阅模式解耦模块通信：</p>
+<pre>ANNOTATION_ADD / UPDATE / DELETE / SELECT / REBIND
+ANNOTATION_MODE_ON / OFF
+STORAGE_CHANGED
+PANEL_OPEN / CLOSE</pre>
+
+<h3>4.6 数据模型</h3>
+<pre>{
+  id: "uuid",
+  type: "element" | "position",
+  elementSelector: { xpath, cssSelector, tagName, textContent } | null,
+  position: { x: 0-100, y: 0-100 },      // 视口百分比
+  offset: { top, left, placement },
+  content: { text, createdAt, updatedAt, author, color },
+  metadata: { url, viewport, pageTitle },
+  visible: true,
+  _computedVisible: true | false | null   // null = 孤立
+}</pre>
+<p>localStorage key: <code>annotation_widget_store</code></p>
+
+<!-- ============================== 5 ============================== -->
+<h2 id="build">5. 构建打包</h2>
+
+<h3>前置条件</h3>
+<p>确保项目已安装 <code>esbuild</code>：</p>
+<pre>npm install esbuild --save-dev</pre>
+
+<h3>执行构建</h3>
+<pre>node annotation-widget-build/build.cjs</pre>
+
+<p>输出：</p>
+<pre>[annotation-widget] Built: F:\...\public\annotation-widget.js (37.2 KB)</pre>
+
+<h3>构建产物说明</h3>
+<table>
+  <tr><th>产物</th><th>位置</th><th>用途</th></tr>
+  <tr><td><code>annotation-widget.js</code></td><td><code>public/</code></td><td>生产使用的单个 JS 文件，无任何外部依赖</td></tr>
+</table>
+
+<p><code>build.cjs</code> 做的事：</p>
+<ol>
+  <li>以 <code>src/index.js</code> 为入口，递归解析所有 <code>import</code></li>
+  <li>将所有 ES 模块打包为一个 IIFE（立即执行函数）</li>
+  <li>目标 ES2020、UTF-8、minified</li>
+  <li>输出到 <code>public/annotation-widget.js</code></li>
+</ol>
+
+<div class="warn">
+  <strong>注意：</strong>构建脚本命名为 <code>build.cjs</code> 而非 <code>build.js</code>，因为项目 <code>package.json</code> 中设置了 <code>"type": "module"</code>，esbuild 的 <code>require()</code> 语法需要用 CommonJS 扩展名。
+</div>
+
+<!-- ============================== 6 ============================== -->
+<h2 id="integrate">6. 接入项目</h2>
+
+<p>构建产物 <code>annotation-widget.js</code> 是一个<strong>完全独立的文件</strong>，可以在任何前端项目中使用。</p>
+
+<h3>6.1 最简接入（仅本地单机使用，无局域网同步）</h3>
+
+<p>只需 1 步：</p>
+<ol>
+  <li>复制 <code>annotation-widget.js</code> 到项目的静态资源目录（如 <code>public/</code>、<code>static/</code>）</li>
+  <li>在 <code>index.html</code> 的 <code>&lt;/body&gt;</code> 前添加一行：</li>
+</ol>
+<pre>&lt;script src="/annotation-widget.js"&gt;&lt;/script&gt;</pre>
+
+<p>完成。刷新页面即可看到右上角浮动工具栏。</p>
+
+<h3>6.2 完整接入（含局域网只读同步）</h3>
+
+<p>需要额外配置 Vite 中间件，步骤见<a href="#blank-project">第 7 节</a>。</p>
+
+<h3>6.3 独立使用（任意 HTML 页面）</h3>
+
+<p>直接将 <code>&lt;script&gt;</code> 标签插入任意 HTML 文件即可，不需要任何构建工具。</p>
+
+<pre>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+  &lt;h1&gt;My Page&lt;/h1&gt;
+  &lt;script src="./annotation-widget.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+
+<!-- ============================== 7 ============================== -->
+<h2 id="blank-project">7. 改造空白 Vite Vue 项目</h2>
+
+<p>从一个空白 Vite + Vue 项目开始，完整接入标注系统（含局域网只读同步）：</p>
+
+<h3>步骤 1：复制构建产物</h3>
+<pre>cp annotation-widget.js your-project/public/</pre>
+
+<h3>步骤 2：修改 index.html</h3>
+<p>在 <code>&lt;/body&gt;</code> 前添加一行：</p>
+<pre>&lt;script src="/annotation-widget.js"&gt;&lt;/script&gt;</pre>
+
+<h3>步骤 3：修改 vite.config.ts</h3>
+<p>添加中间件插件，在 <code>plugins</code> 数组中新增：</p>
+
+<pre>import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import fs from 'fs'
+import path from 'path'
+
+const ANNOTATIONS_FILE = path.resolve(__dirname, 'public/annotations.json')
+
+function annotationSyncPlugin() {
+  return {
+    name: 'annotation-sync',
+    configureServer(server) {
+      // 读取标注数据（局域网只读用）
+      server.middlewares.use('/api/annotations', (req, res) => {
+        if (req.method === 'GET') {
+          try {
+            if (fs.existsSync(ANNOTATIONS_FILE)) {
+              const data = fs.readFileSync(ANNOTATIONS_FILE, 'utf-8')
+              res.setHeader('Content-Type', 'application/json')
+              res.end(data)
+            } else {
+              res.setHeader('Content-Type', 'application/json')
+              res.end('[]')
+            }
+          } catch {
+            res.statusCode = 500
+            res.end('{"error":"read failed"}')
+          }
+          return
+        }
+
+        // 写入标注数据（仅 localhost 可用）
+        if (req.method === 'POST') {
+          const isLocalhost = req.headers.host?.startsWith('localhost') ||
+                              req.headers.host?.startsWith('127.0.0.1')
+          if (!isLocalhost) {
+            res.statusCode = 403
+            res.end('{"error":"read-only"}')
+            return
+          }
+          let body = ''
+          req.on('data', chunk => body += chunk)
+          req.on('end', () => {
+            try {
+              fs.writeFileSync(ANNOTATIONS_FILE, body, 'utf-8')
+              res.setHeader('Content-Type', 'application/json')
+              res.end('{"ok":true}')
+            } catch {
+              res.statusCode = 500
+              res.end('{"error":"write failed"}')
+            }
+          })
+        }
+      })
+    }
+  }
+}
+
+export default defineConfig({
+  plugins: [vue(), annotationSyncPlugin()],
+  server: {
+    host: '0.0.0.0',  // 允许局域网访问
+    port: 5173
+  }
+})</pre>
+
+<div class="tip">
+  <strong>关键设计：</strong>中间件通过 <code>req.headers.host</code> 判断请求来源。localhost/127.0.0.1 可以 POST 写入，其他 IP 只能 GET 读取。这样评审者在局域网查看时自动获得只读权限。
+</div>
+
+<h3>完成</h3>
+<p>三步骤完成后，运行 <code>npm run dev</code>，即可在本地标注、局域网查看。</p>
+
+<h3>如果不是 Vite 项目？</h3>
+<table>
+  <tr><th>构建工具</th><th>等价操作</th></tr>
+  <tr><td>Webpack</td><td>在 <code>devServer.before</code> 或 <code>setupMiddlewares</code> 中添加同样的两个 API 端点</td></tr>
+  <tr><td>Next.js</td><td>在 <code>app/api/annotations/route.ts</code> 中实现 GET/POST</td></tr>
+  <tr><td>纯静态（无 dev server）</td><td>需要额外跑一个简单的 Node/Express 服务提供 API 端点</td></tr>
+</table>
+
+<!-- ============================== 8 ============================== -->
+<h2 id="usage">8. 用户使用教程</h2>
+
+<h3>8.1 启动标注模式</h3>
+<ul>
+  <li>点击页面<strong>右上角浮动工具栏</strong>的图钉按钮（第一个）</li>
+  <li>或按键盘快捷键 <strong><code>Ctrl+Shift+A</code></strong></li>
+</ul>
+<p>进入标注模式后，鼠标指针变为十字准星，图钉按钮高亮显示。</p>
+
+<h3>8.2 创建标注</h3>
+<ul>
+  <li><strong>元素标注：</strong>点击页面上的任意元素（按钮、卡片、输入框等）→ 弹出文本编辑器</li>
+  <li><strong>位置标注：</strong>点击页面空白区域 → 创建自由浮动标注</li>
+</ul>
+
+<h3>8.3 编辑标注</h3>
+<ul>
+  <li>输入标注文字说明</li>
+  <li>选择标记颜色（6 种预设色：蓝/红/绿/黄/紫/青）</li>
+  <li>点击<strong>保存</strong> → 标注标记出现在页面上</li>
+  <li>点击<strong>取消</strong> → 丢弃编辑</li>
+  <li>点击<strong>删除</strong> → 删除该标注</li>
+</ul>
+
+<h3>8.4 查看标注</h3>
+<ul>
+  <li>标注以<strong>编号圆形徽章</strong>显示在绑定元素右上角</li>
+  <li>自由浮动标注显示为视口百分比位置的图钉徽章</li>
+  <li><strong>鼠标悬停</strong>徽章 → 显示标注文字预览 tooltip</li>
+  <li><strong>点击徽章</strong>（非标注模式下）→ 打开编辑器查看/修改</li>
+</ul>
+
+<h3>8.5 拖拽重绑定</h3>
+<ol>
+  <li>在<strong>非标注模式</strong>下，鼠标按住标注徽章</li>
+  <li>拖拽到页面上另一个元素上 → 标注重新绑定到新元素</li>
+  <li>拖拽到页面空白区域 → 标注转为自由浮动</li>
+</ol>
+
+<h3>8.6 管理面板</h3>
+<p>点击工具栏的<strong>列表按钮</strong>（第二个）打开管理面板：</p>
+<ul>
+  <li><strong>搜索：</strong>输入关键词过滤标注列表</li>
+  <li><strong>编辑：</strong>点击"编辑"按钮打开该标注的编辑器</li>
+  <li><strong>定位：</strong>点击"定位"按钮，页面平滑滚动到标注目标并高亮闪烁</li>
+  <li><strong>删除：</strong>点击"×"按钮删除单个标注</li>
+  <li><strong>隐藏全部 / 显示全部：</strong>切换全局标注可见性</li>
+  <li><strong>导出 JSON：</strong>下载所有标注为 <code>.json</code> 文件</li>
+  <li><strong>导入 JSON：</strong>从 <code>.json</code> 文件导入标注</li>
+  <li><strong>清空全部：</strong>删除所有标注（需确认）</li>
+</ul>
+
+<h3>8.7 全局显隐</h3>
+<p>点击工具栏的<strong>眼睛按钮</strong>（第三个）一键切换所有标注的显示/隐藏。隐藏时眼睛图标变为斜线样式。</p>
+
+<h3>8.8 退出标注模式</h3>
+<ul>
+  <li>再次点击图钉按钮</li>
+  <li>或再次按 <code>Ctrl+Shift+A</code></li>
+</ul>
+
+<h3>8.9 局域网只读模式</h3>
+<p>当通过局域网 IP 地址（如 <code>http://172.18.206.103:3006</code>）访问页面时：</p>
+<ul>
+  <li>图钉按钮<strong>不显示</strong>，无法进入标注模式</li>
+  <li>标注列表仍可查看，但<strong>无编辑/删除/清空/导入按钮</strong></li>
+  <li>悬停和点击徽章仍可查看标注内容</li>
+  <li>标注数据每隔 10 秒自动从 <code>/annotations.json</code> 拉取最新内容</li>
+</ul>
+
+<!-- ============================== 9 ============================== -->
+<h2 id="api">9. 编程 API</h2>
+
+<p>标注系统挂载后，会在 <code>window.__AnnotationWidget</code> 上暴露以下 API：</p>
+
+<table>
+  <tr><th>方法</th><th>说明</th></tr>
+  <tr><td><code>.enter()</code></td><td>进入标注模式</td></tr>
+  <tr><td><code>.exit()</code></td><td>退出标注模式</td></tr>
+  <tr><td><code>.toggle()</code></td><td>切换标注模式</td></tr>
+  <tr><td><code>.showAll()</code></td><td>显示全部标注</td></tr>
+  <tr><td><code>.hideAll()</code></td><td>隐藏全部标注</td></tr>
+  <tr><td><code>.toggleVisibility()</code></td><td>切换全局显隐</td></tr>
+  <tr><td><code>.openPanel()</code></td><td>打开管理面板</td></tr>
+  <tr><td><code>.getAnnotations()</code></td><td>获取当前所有标注数据</td></tr>
+  <tr><td><code>.destroy()</code></td><td>销毁标注系统（移除 Shadow DOM 和事件监听）</td></tr>
+  <tr><td><code>.engine</code></td><td>获取底层 engine 实例（高级用法）</td></tr>
+</table>
+
+<p>示例：在浏览器控制台操作</p>
+<pre>// 获取所有标注
+__AnnotationWidget.getAnnotations()
+
+// 程序化进入标注模式
+__AnnotationWidget.enter()
+
+// 程序化打开管理面板
+__AnnotationWidget.openPanel()</pre>
+
+<!-- ============================== 10 ============================== -->
+<h2 id="faq">10. 常见问题</h2>
+
+<h3>Q: 标注数据存在哪里？</h3>
+<p>本地 localhost：<strong>localStorage</strong>（key: <code>annotation_widget_store</code>）。同时如果配置了 Vite 中间件，每次变更也会写入 <code>public/annotations.json</code>。</p>
+<p>局域网查看：从 <code>/annotations.json</code> 拉取，仅内存中使用，不写入任何地方。</p>
+
+<h3>Q: 局域网用户能编辑标注吗？</h3>
+<p>不能。中间件通过 <code>req.headers.host</code> 判断，非 localhost 的 POST 请求返回 403。widget 前端也会根据 <code>location.hostname</code> 隐藏编辑功能。</p>
+
+<h3>Q: 标注会跟随页面滚动吗？</h3>
+<p>会。元素绑定标注通过 <code>getBoundingClientRect()</code> 在每次 scroll/resize 时重新计算位置。自由浮动标注按视口百分比定位，天然适应窗口变化。</p>
+
+<h3>Q: 目标元素被删除了怎么办？</h3>
+<p>标注徽章会变成虚线问号样式（孤立状态）。你可以拖拽它到新元素上重新绑定。</p>
+
+<h3>Q: 支持 SPA 路由切换吗？</h3>
+<p>部分支持。MutationObserver 会检测 DOM 结构变化并重新检查所有标注。但如果路由切换导致整个页面区域被替换，某些标注可能变为孤立状态。当前版本最适用于同一个页面上的标注场景。</p>
+
+<h3>Q: 标注数据丢失了怎么办？</h3>
+<p>定期使用管理面板的"导出 JSON"功能备份标注数据。如果 localStorage 被清除，可以通过"导入 JSON"恢复。</p>
+
+<h3>Q: 如何完全移除标注系统？</h3>
+<p>在浏览器控制台执行：</p>
+<pre>__AnnotationWidget.destroy()</pre>
+<p>然后删除 <code>index.html</code> 中的 <code>&lt;script&gt;</code> 标签即可。</p>
+
+<h3>Q: 可以不显示浮动工具栏吗？</h3>
+<p>可以。调用 <code>__AnnotationWidget.hideAll()</code> 隐藏所有标注，工具栏仍会显示。如需完全隐藏整个系统，使用 <code>__AnnotationWidget.destroy()</code>。</p>
+
+<h3>Q: 支持移动端触屏吗？</h3>
+<p>工具栏和标注标记在移动端可正常显示和点击。拖拽重绑定功能在触屏上体验有限，建议在桌面端使用。</p>
+
+<h3>Q: 最多支持多少个标注？</h3>
+<p>理论上无上限。实测 500+ 标注无明显性能影响。所有 UI 在 Shadow DOM 内渲染，不触发 Vue 响应式系统。</p>
+
+<h3>Q: 为什么构建脚本叫 build.cjs 而不是 build.js？</h3>
+<p>因为项目 <code>package.json</code> 中 <code>"type": "module"</code> 使得 <code>.js</code> 文件被当作 ES 模块处理。esbuild 的 <code>require()</code> 语法需要用 CommonJS，所以用 <code>.cjs</code> 扩展名强制 CommonJS 模式。</p>
+
+<hr style="margin-top:60px; border-color:var(--border)">
+<p style="color:var(--text-secondary); font-size:13px;">
+  Annotation Widget v1.0 &middot; 构建工具: esbuild &middot; 零外部依赖
+</p>
+
+</main>
+</body>
+</html>
